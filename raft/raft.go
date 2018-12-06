@@ -102,6 +102,10 @@ type Log struct {
 	Command interface{}
 }
 
+func (rf *Raft) Status() Status {
+	return rf.status
+}
+
 // return currentTerm and whether this server
 // believes it is the leader.
 func (rf *Raft) GetState() (int, bool) {
@@ -421,8 +425,13 @@ func (rf *Raft) Start(command interface{}) (int, int, bool) {
 
 	// Your code here (Lab2).
 	if isLeader {
+		// print("append log\n")
 		index = len(rf.log)
 		rf.log = append(rf.log, Log{term, command})
+		// print("results are : ")
+		// print(rf.me)
+		// print(len(rf.log))
+		// print("\n")
 		rf.persist()
 	}
 
@@ -442,8 +451,14 @@ func (rf *Raft) Kill() {
 
 func (rf *Raft) updateCommitIndex() {
 	commitIndex := rf.commitIndex+1
+	// print("log length and commitindex is :")
+	// print(rf.me)
+	// print(len(rf.log))
+	// print(rf.commitIndex)
+	// print("\n")
 
 	for commitIndex <= len(rf.log)-1 {
+		// print("committed\n")
 		matchCnt := 0
 		for server := range rf.peers {
 			if server != rf.me && rf.log[commitIndex].Term == rf.currentTerm {
@@ -461,7 +476,9 @@ func (rf *Raft) updateCommitIndex() {
 }
 
 func (rf *Raft) updateApplyIndex() {
+	// print("Start updateApplyIndex\n")
 	for rf.commitIndex > rf.lastApplied {
+		// print("UPDATING!!!!\n")
 		rf.lastApplied++
 		rf.applyCh <- ApplyMsg{true, rf.log[rf.lastApplied].Command, rf.lastApplied}
 	}
@@ -505,6 +522,7 @@ func Make(peers []*labrpc.ClientEnd, me int,
 	// infinite loop running on top of 
 	go func(rf *Raft){
 		for {
+			// print("gofunc executing\n")
 			// fmt.Printf("[Server %d]: state %d, term %d, voteFor %d\n", rf.me, rf.state, rf.currentTerm, rf.votedFor)
 			switch rf.status {
 			case FOLLOWER:
@@ -582,9 +600,9 @@ func Make(peers []*labrpc.ClientEnd, me int,
 }
 
 const (
-	heartbeatTimeout = 300 * time.Millisecond // less than 10 heartbeats per second
+	heartbeatTimeout = 100 * time.Millisecond // less than 10 heartbeats per second
 	electionTimeoutLowerBound int = 400
-	electionTimeoutUpperBound int = 1000
+	electionTimeoutUpperBound int = 800
 )
 
 func ElectionTimeout() time.Duration{
